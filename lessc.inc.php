@@ -661,9 +661,11 @@
 
         // check for a rest
         $last = end($args);
-        if ($last[0] == "rest") {
-            $rest = array_slice($orderedValues, count($args) - 1);
-            $this->set($last[1], $this->reduce(array("list", " ", $rest)));
+        if(gettype($last) == "array") {
+            if ($last[0] == "rest") {
+                $rest = array_slice($orderedValues, count($args) - 1);
+                $this->set($last[1], $this->reduce(array("list", " ", $rest)));
+            }
         }
 
         // wow is this the only true use of PHP's + operator for arrays?
@@ -1672,7 +1674,7 @@
                 $width = strlen($colorStr) == 3 ? 16 : 256;
 
                 for ($i = 3; $i > 0; $i--) { // 3 2 1
-                    $t = $num % $width;
+                    $t = intval($num) % $width;
                     $num /= $width;
 
                     $c[$i] = $t * (256/$width) + $t * floor(16/$width);
