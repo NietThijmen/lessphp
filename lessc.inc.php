@@ -37,7 +37,7 @@
  * The `lessc_formatter` takes a CSS tree, and dumps it to a formatted string,
  * handling things like indentation.
  */
-class lessc {
+#[AllowDynamicProperties] class lessc {
     static public $VERSION = "v0.5.0";
 
     static public $TRUE = array("keyword", "true");
@@ -647,8 +647,7 @@ class lessc {
                     // has default value
                     $value = $a[2];
                 } else {
-                    $this->throwError("Failed to assign arg " . $a[1]);
-                    $value = null; // :(
+                    $this->throwError("Failed to assign arg " . $a[1]); // :(
                 }
 
                 $value = $this->reduce($value);
@@ -746,7 +745,7 @@ class lessc {
                     if ($suffix !== null &&
                         $subProp[0] == "assign" &&
                         is_string($subProp[1]) &&
-                        $subProp[1]{0} != $this->vPrefix
+                        $subProp[1][0] != $this->vPrefix
                     ) {
                         $subProp[2] = array(
                             'list', ' ',
@@ -935,6 +934,8 @@ class lessc {
         if ($list[0] == "list" && isset($list[2][$idx - 1])) {
             return $list[2][$idx - 1];
         }
+
+        return null;
     }
 
     protected function lib_isnumber($value) {
@@ -1191,6 +1192,8 @@ class lessc {
         if (!is_null($color = $this->coerceColor($value))) {
             return isset($color[4]) ? $color[4] : 1;
         }
+
+        return null;
     }
 
     // set the alpha of the color
@@ -1363,7 +1366,7 @@ class lessc {
                     $name = $name . ": ";
                 }
 
-                $this->throwError("${name}expecting $expectedArgs arguments, got $numValues");
+                $this->throwError("{$name}expecting $expectedArgs arguments, got $numValues");
             }
 
             return $values;
@@ -1688,6 +1691,8 @@ class lessc {
                 }
                 return null;
         }
+
+        return null; // This shouldn't actually happen
     }
 
     // make something string like into a string
@@ -1745,7 +1750,7 @@ class lessc {
         }
 
         // type based operators
-        $fname = "op_${ltype}_${rtype}";
+        $fname = "op_{$ltype}_{$rtype}";
         if (is_callable(array($this, $fname))) {
             $out = $this->$fname($op, $left, $right);
             if (!is_null($out)) return $out;
@@ -1776,6 +1781,8 @@ class lessc {
             array_unshift($strRight[2], $left);
             return $strRight;
         }
+
+        return null;
     }
 
 
@@ -1793,6 +1800,8 @@ class lessc {
         if ($op == '+' || $op == '*') {
             return $this->op_color_number($op, $rgt, $lft);
         }
+
+        $this->throwError("evaluate error: number op color failed on op $op");
     }
 
     protected function op_color_number($op, $lft, $rgt) {
@@ -1950,9 +1959,7 @@ class lessc {
                 return $current->store[$name];
             }
 
-            $current = isset($current->storeParent) ?
-                $current->storeParent :
-                $current->parent;
+            $current = $current->storeParent ?? $current->parent;
         }
 
         $this->throwError("variable $name is undefined");
@@ -1963,7 +1970,7 @@ class lessc {
         $this->pushEnv();
         $parser = new lessc_parser($this, __METHOD__);
         foreach ($args as $name => $strValue) {
-            if ($name{0} !== '@') {
+            if ($name[0] !== '@') {
                 $name = '@' . $name;
             }
             $parser->count = 0;
@@ -2424,6 +2431,18 @@ class lessc_parser {
 
     // caches preg escaped literals
     static protected $literalCache = array();
+    public $count = 0;
+    public $buffer;
+    public $eatWhiteDefault;
+    public $lessc;
+    public $sourceName;
+    public $line = 1;
+    public $env;
+    public $writeComments;
+    public $seenComments;
+    public $inExp;
+    public $currentProperty;
+
 
     public function __construct($lessc, $sourceName = null) {
         $this->eatWhiteDefault = true;
@@ -2466,7 +2485,9 @@ class lessc_parser {
         $this->whitespace();
 
         // parse the entire file
-        while (false !== $this->parseChunk());
+        while (false !== $this->parseChunk()) {
+            // do nothing
+        }
 
         if ($this->count != strlen($this->buffer))
             $this->throwError();
@@ -2624,7 +2645,7 @@ class lessc_parser {
                 $hidden = true;
                 if (!isset($block->args)) {
                     foreach ($block->tags as $tag) {
-                        if (!is_string($tag) || $tag{0} != $this->lessc->mPrefix) {
+                        if (!is_string($tag) || $tag[0] != $this->lessc->mPrefix) {
                             $hidden = false;
                             break;
                         }
@@ -2678,7 +2699,7 @@ class lessc_parser {
     protected function fixTags($tags) {
         // move @ tags out of variable namespace
         foreach ($tags as &$tag) {
-            if ($tag{0} == $this->lessc->vPrefix)
+            if ($tag[0] == $this->lessc->vPrefix)
                 $tag[0] = $this->lessc->mPrefix;
         }
         return $tags;
@@ -3780,6 +3801,7 @@ class lessc_formatter_classic {
     public $breakSelectors = false;
 
     public $compressColors = false;
+    public $indentLevel;
 
     public function __construct() {
         $this->indentLevel = 0;
