@@ -99,12 +99,12 @@ class tagparse extends easyparse {
     }
 
     public static function compilePaths($paths) {
-        return implode(', ', array_map(array('self', 'compilePath'), $paths));
+        return implode(', ', array_map(self::compilePath(...), $paths));
     }
 
     // array of tags
     public static function compilePath($path) {
-        return implode(' ', array_map(array('self', 'compileTag'), $path));
+        return implode(' ', array_map(self::compileTag(...), $path));
     }
 
 
@@ -367,7 +367,7 @@ class lessify extends lessc {
         print_r($this->env);
     }
 
-    public function parse($str = null) {
+    public function parse($str = null, $initialVariables = null) {
         $this->prepareParser($str ? $str : $this->buffer);
         while (false !== $this->parseChunk());
 
