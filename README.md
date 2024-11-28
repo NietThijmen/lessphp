@@ -4,6 +4,9 @@
 ### <http://leafo.net/lessphp>
 
 `lessphp` is a compiler for LESS written in PHP. The documentation is great,
+
+This fork was made to make it compatible with PHP 8.2. As of now, I will only support 8.2 and up. 
+
 so check it out: <http://leafo.net/lessphp/docs/>.
 
 Here's a quick tutorial:
